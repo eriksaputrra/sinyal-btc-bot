@@ -10,12 +10,18 @@ def get_binance_candles(symbol="BTCUSDT", interval="1h", limit=2):
     data = response.json()
     candles = []
     for candle in data:
+    if not isinstance(candle, list) or len(candle) < 5:
+        continue  # skip jika data tidak lengkap
+    try:
         candles.append({
+            "time": int(candle[0]),
             "open": float(candle[1]),
             "high": float(candle[2]),
             "low": float(candle[3]),
             "close": float(candle[4]),
         })
+    except ValueError:
+        continue  # skip jika data tidak valid
     return candles
 
 def detect_engulfing(candles):

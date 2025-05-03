@@ -2,7 +2,7 @@ import requests
 import os
 from datetime import datetime
 
-# Ambil token dan chat ID dari secrets
+# Ambil token dan chat ID dari GitHub Secrets
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -14,16 +14,28 @@ LIMIT = 3  # Ambil 3 candle terakhir
 def get_binance_candles():
     url = f"https://api.binance.com/api/v3/klines?symbol={PAIR}&interval={INTERVAL}&limit={LIMIT}"
     response = requests.get(url)
-    data = response.json()
+
+    if response.status_code != 200:
+        raise Exception(f"Gagal mengambil data dari Binance: {response.status_code} - {response.text}")
+
+    try:
+        data = response.json()
+    except Exception as e:
+        raise Exception(f"Data tidak bisa di-decode sebagai JSON: {e}")
+
     candles = []
     for candle in data:
-        candles.append({
-            "time": int(candle[0]),
-            "open": float(candle[1]),
-            "high": float(candle[2]),
-            "low": float(candle[3]),
-            "close": float(candle[4]),
-        })
+        if isinstance(candle, list) and len(candle) >= 5:
+            try:
+                candles.append({
+                    "time": int(candle[0]),
+                    "open": float(candle[1]),
+                    "high": float(candle[2]),
+                    "low": float(candle[3]),
+                    "close": float(candle[4]),
+                })
+            except ValueError:
+                continue
     return candles
 
 def is_bullish_engulfing(prev, curr):
